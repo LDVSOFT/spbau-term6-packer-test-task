@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"bufio"
+	"io/ioutil"
+	"bytes"
 )
 
 func main() {
@@ -20,17 +22,20 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to get url: %s", err.Error())
 		os.Exit(1)
 	}
-	defer response.Body.Close()
-
-	scanner := bufio.NewScanner(bufio.NewReader(response.Body))
-	scanner.Split(bufio.ScanBytes)
-	var body_size int = 0
-	for scanner.Scan() {
-		body_size += len(scanner.Bytes())
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to read response: %s", err.Error())
+	body, err := ioutil.ReadAll(bufio.NewReader(response.Body))
+	response.Body.Close()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading response: %s", err.Error())
 		os.Exit(1)
 	}
-	fmt.Println(body_size)
+
+	body_size := len(body)
+	body_words := 0
+	scanner := bufio.NewScanner(bytes.NewReader(body))
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		body_words++
+	}
+
+	fmt.Printf("%d %d\n", body_size, body_words)
 }
